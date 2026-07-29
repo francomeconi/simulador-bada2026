@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Simulador 3D del stand v2.12 — BADA 2026 · Terraza al Cosmos (con fotos reales)</title>
+<title>Simulador 3D del stand v2.15 — BADA 2026 · Terraza al Cosmos (con fotos reales)</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
   :root{
@@ -62,7 +62,7 @@
 <body>
 
 <div class="top">
-  <h1>Simulador del stand v2.12 · BADA 2026
+  <h1>Simulador del stand v2.15 · BADA 2026
     <small>Terraza al Cosmos — con fotos reales de las obras y de la pared exterior</small>
   </h1>
   <div class="controls">
@@ -194,6 +194,54 @@
   </label>
   <label class="tgl"><span>Repisa derecha C — cantidad (no aplica a Fases ni Lunas):</span>
    <select id="selShelf_derC_count">
+    <option value="0">0 fotos (vacía)</option>
+    <option value="1">1 foto (centrada)</option>
+    <option value="2">2 fotos (centradas)</option>
+    <option value="3">3 fotos (1 centrada + 2 volando)</option>
+   </select>
+  </label>
+  <label class="tgl"><span>Repisa fondo A — contenido:</span>
+   <select id="selShelf_fondoA_content">
+    <option value="20x30">20×30 apaisada, sin marco</option>
+    <option value="30x30">30×30 con marco (curadas)</option>
+    <option value="fases">Fases lunares (100×30, vuela 20 cm de cada lado)</option>
+    <option value="lunas7">Lunas individuales 20×20 (bloque fijo de 7, sin marco)</option>
+   </select>
+  </label>
+  <label class="tgl"><span>Repisa fondo A — cantidad (no aplica a Fases ni Lunas):</span>
+   <select id="selShelf_fondoA_count">
+    <option value="0">0 fotos (vacía)</option>
+    <option value="1">1 foto (centrada)</option>
+    <option value="2">2 fotos (centradas)</option>
+    <option value="3">3 fotos (1 centrada + 2 volando)</option>
+   </select>
+  </label>
+  <label class="tgl"><span>Repisa fondo B — contenido:</span>
+   <select id="selShelf_fondoB_content">
+    <option value="20x30">20×30 apaisada, sin marco</option>
+    <option value="30x30">30×30 con marco (curadas)</option>
+    <option value="fases">Fases lunares (100×30, vuela 20 cm de cada lado)</option>
+    <option value="lunas7">Lunas individuales 20×20 (bloque fijo de 7, sin marco)</option>
+   </select>
+  </label>
+  <label class="tgl"><span>Repisa fondo B — cantidad (no aplica a Fases ni Lunas):</span>
+   <select id="selShelf_fondoB_count">
+    <option value="0">0 fotos (vacía)</option>
+    <option value="1">1 foto (centrada)</option>
+    <option value="2">2 fotos (centradas)</option>
+    <option value="3">3 fotos (1 centrada + 2 volando)</option>
+   </select>
+  </label>
+  <label class="tgl"><span>Repisa fondo C — contenido:</span>
+   <select id="selShelf_fondoC_content">
+    <option value="20x30">20×30 apaisada, sin marco</option>
+    <option value="30x30">30×30 con marco (curadas)</option>
+    <option value="fases">Fases lunares (100×30, vuela 20 cm de cada lado)</option>
+    <option value="lunas7">Lunas individuales 20×20 (bloque fijo de 7, sin marco)</option>
+   </select>
+  </label>
+  <label class="tgl"><span>Repisa fondo C — cantidad (no aplica a Fases ni Lunas):</span>
+   <select id="selShelf_fondoC_count">
     <option value="0">0 fotos (vacía)</option>
     <option value="1">1 foto (centrada)</option>
     <option value="2">2 fotos (centradas)</option>
@@ -353,7 +401,8 @@ const MESA_PHOTOS={
 const state={stand:'azul',wallColor:'negro',retiroIzq:1,wallsSolid:true,mesaMode:'30x30x5',mesaBase:'cromada',muebleBlanco:false,pantallaVertical:false,fasesOn:true,
  shelfCfg:{
   izqA:{content:'lunas7',count:1},izqB:{content:'20x30',count:1},izqC:{content:'20x30',count:1},
-  derA:{content:'20x30',count:1},derB:{content:'20x30',count:1},derC:{content:'20x30',count:1}
+  derA:{content:'20x30',count:1},derB:{content:'20x30',count:1},derC:{content:'20x30',count:1},
+  fondoA:{content:'lunas7',count:1},fondoB:{content:'30x30',count:1},fondoC:{content:'20x30',count:1}
  },
  mesaPhotos30:{rowA:['m_dolphin','m_helix','m_luna'],rowB:['m_pilares','m_sol','m_trifid']},
  mesaPhotos20:{rowA:['sq1','sq2','sq3','sq4','sq5','sq6','sq7'],rowB:['sq1','sq2','sq3','sq4','sq5','sq6','sq7']},
@@ -384,12 +433,15 @@ function defaultFurn(){
   pantalla:{on:true,label:'Pantalla documental (55×33 cm)',fw:0.55,fd:0.40,rot:90,x:1.78,z:-0.30,color:'#22262f',tag:'TV'},
   persona:{on:true,label:'Persona (escala ~1,70 m)',fw:0.45,fd:0.45,rot:0,x:0.95,z:-0.35,color:'#6b7a8f',tag:'P',round:true},
   telescopio:{on:true,label:'Telescopio (trípode ø70)',fw:0.70,fd:0.70,rot:270,x:-1.63,z:-0.35,color:'#2f3f5e',tag:'Tel',round:true},
-  repisaIzqA:{on:true,label:'Repisa izquierda A (60 cm, modular)',fw:0.60,fd:0.15,rot:270,x:-1.905,z:-2.33,color:'#9aa0aa',tag:'RepIA'},
-  repisaIzqB:{on:true,label:'Repisa izquierda B (60 cm, modular)',fw:0.60,fd:0.15,rot:270,x:-1.905,z:-1.73,color:'#9aa0aa',tag:'RepIB'},
-  repisaIzqC:{on:true,label:'Repisa izquierda C (60 cm, modular)',fw:0.60,fd:0.15,rot:270,x:-1.905,z:-1.13,color:'#9aa0aa',tag:'RepIC'},
-  repisaDerA:{on:true,label:'Repisa derecha A (60 cm, modular)',fw:0.60,fd:0.15,rot:90,x:1.905,z:-2.33,color:'#9aa0aa',tag:'RepDA'},
-  repisaDerB:{on:true,label:'Repisa derecha B (60 cm, modular)',fw:0.60,fd:0.15,rot:90,x:1.905,z:-1.73,color:'#9aa0aa',tag:'RepDB'},
-  repisaDerC:{on:true,label:'Repisa derecha C (60 cm, modular)',fw:0.60,fd:0.15,rot:90,x:1.905,z:-1.13,color:'#9aa0aa',tag:'RepDC'},
+  repisaIzqA:{on:true,label:'Repisa izquierda A (60 cm, modular)',fw:0.60,fd:0.15,rot:270,x:-1.905,z:-2.33,color:'#1e1e20',tag:'RepIA'},
+  repisaIzqB:{on:true,label:'Repisa izquierda B (60 cm, modular)',fw:0.60,fd:0.15,rot:270,x:-1.905,z:-1.73,color:'#1e1e20',tag:'RepIB'},
+  repisaIzqC:{on:true,label:'Repisa izquierda C (60 cm, modular)',fw:0.60,fd:0.15,rot:270,x:-1.905,z:-1.13,color:'#1e1e20',tag:'RepIC'},
+  repisaDerA:{on:true,label:'Repisa derecha A (60 cm, modular)',fw:0.60,fd:0.15,rot:90,x:1.905,z:-2.33,color:'#1e1e20',tag:'RepDA'},
+  repisaDerB:{on:true,label:'Repisa derecha B (60 cm, modular)',fw:0.60,fd:0.15,rot:90,x:1.905,z:-1.73,color:'#1e1e20',tag:'RepDB'},
+  repisaDerC:{on:true,label:'Repisa derecha C (60 cm, modular)',fw:0.60,fd:0.15,rot:90,x:1.905,z:-1.13,color:'#1e1e20',tag:'RepDC'},
+  repisaFondoA:{on:true,label:'Repisa fondo A (60 cm, modular, izq. de la Luna)',fw:0.60,fd:0.15,rot:0,x:-1.65,z:-3.385,color:'#1e1e20',tag:'RepFA'},
+  repisaFondoB:{on:true,label:'Repisa fondo B (60 cm, modular, izq. de la Luna)',fw:0.60,fd:0.15,rot:0,x:-1.05,z:-3.385,color:'#1e1e20',tag:'RepFB'},
+  repisaFondoC:{on:true,label:'Repisa fondo C (60 cm, modular, der. de la Luna)',fw:0.60,fd:0.15,rot:0,x:1.05,z:-3.385,color:'#1e1e20',tag:'RepFC'},
   mostrador:{on:false,label:'Mostrador MC131 (90×46×100, alternativa al Baúl 1)',fw:0.90,fd:0.46,rot:90,x:1.75,z:-0.55,color:'#e4ddc8',tag:'Most'}
  };
 }
@@ -495,7 +547,7 @@ function wireShelf(key){
  cSel.onchange=e=>{state.shelfCfg[key].content=e.target.value;build3D();};
  nSel.onchange=e=>{state.shelfCfg[key].count=parseInt(e.target.value,10);build3D();};
 }
-['izqA','izqB','izqC','derA','derB','derC'].forEach(wireShelf);
+['izqA','izqB','izqC','derA','derB','derC','fondoA','fondoB','fondoC'].forEach(wireShelf);
 $('selMesaMode').value=state.mesaMode;
 $('selMesaMode').onchange=e=>{
  state.mesaMode=e.target.value;
@@ -907,10 +959,10 @@ function buildRepisaModular(side,key){
  const cfg=state.shelfCfg[side+key];
  const g=new THREE.Group();
  const MOUNT_H=0.65;
- const chr=new THREE.MeshLambertMaterial({color:0x9aa0aa});
+ const chr=new THREE.MeshLambertMaterial({color:0x1e1e20});
  const shelf=new THREE.Mesh(new THREE.BoxGeometry(SHELF_SEG_W,0.02,0.15),chr);
  shelf.position.set(0,MOUNT_H,0.075);g.add(shelf);
- const bracketMat=new THREE.MeshLambertMaterial({color:0x6b6f78});
+ const bracketMat=new THREE.MeshLambertMaterial({color:0x161616});
  for(const bx of[-SHELF_SEG_W/2+0.06,SHELF_SEG_W/2-0.06]){
   const bracket=new THREE.Mesh(new THREE.BoxGeometry(0.02,0.02,0.12),bracketMat);
   bracket.position.set(bx,MOUNT_H-0.01,0.06);g.add(bracket);
@@ -969,7 +1021,7 @@ function buildRepisaModular(side,key){
  }else{
   // 20×30 apaisada sin marco
   const pw=0.30,ph=0.20;
-  const pool=side==='izq'?['h1','h2','h3','h4','h5','h6']:['v1','v2','v3','m2_ghost'];
+  const pool=side==='izq'?['h1','h2','h3','h4','h5','h6']:side==='der'?['v1','v2','v3','m2_ghost']:['h1','h2','h3','h4','h5','h6'];
   const baseIdx={A:0,B:1,C:2}[key]*3;
   const positions=shelfPositions(cfg.count,pw);
   const halfH=ph/2;
@@ -991,6 +1043,9 @@ function buildRepisaIzqC(){return buildRepisaModular('izq','C');}
 function buildRepisaDerA(){return buildRepisaModular('der','A');}
 function buildRepisaDerB(){return buildRepisaModular('der','B');}
 function buildRepisaDerC(){return buildRepisaModular('der','C');}
+function buildRepisaFondoA(){return buildRepisaModular('fondo','A');}
+function buildRepisaFondoB(){return buildRepisaModular('fondo','B');}
+function buildRepisaFondoC(){return buildRepisaModular('fondo','C');}
 function buildTelescopio(){
  const g=new THREE.Group();
  const hub=new THREE.Vector3(0,0.95,0);
@@ -1101,7 +1156,7 @@ function build3D(){
   scene.add(grp);
   pieceMeshes.push(grp);
  }
- const builders={mesa:buildMesa,bancoIzq:buildBanco,bancoDer:buildBanco,mueble:buildMueble,pantalla:buildPantalla,persona:buildPersona,telescopio:buildTelescopio,banqueta:buildBanqueta,banqueta2:buildBanqueta2,repisaIzqA:buildRepisaIzqA,repisaIzqB:buildRepisaIzqB,repisaIzqC:buildRepisaIzqC,repisaDerA:buildRepisaDerA,repisaDerB:buildRepisaDerB,repisaDerC:buildRepisaDerC,mostrador:buildMostrador};
+ const builders={mesa:buildMesa,bancoIzq:buildBanco,bancoDer:buildBanco,mueble:buildMueble,pantalla:buildPantalla,persona:buildPersona,telescopio:buildTelescopio,banqueta:buildBanqueta,banqueta2:buildBanqueta2,repisaIzqA:buildRepisaIzqA,repisaIzqB:buildRepisaIzqB,repisaIzqC:buildRepisaIzqC,repisaDerA:buildRepisaDerA,repisaDerB:buildRepisaDerB,repisaDerC:buildRepisaDerC,repisaFondoA:buildRepisaFondoA,repisaFondoB:buildRepisaFondoB,repisaFondoC:buildRepisaFondoC,mostrador:buildMostrador};
  for(const k in state.furn){
   if(k==='exhibidor')continue;
   const f=state.furn[k];
@@ -1242,7 +1297,7 @@ function applyConfig(cfg){
  $('selWallCol').value=state.wallColor;
  $('selRetiro').value=String(state.retiroIzq);
  $('chkSolid').checked=state.wallsSolid;
- ['izqA','izqB','izqC','derA','derB','derC'].forEach(k=>{
+ ['izqA','izqB','izqC','derA','derB','derC','fondoA','fondoB','fondoC'].forEach(k=>{
   $('selShelf_'+k+'_content').value=state.shelfCfg[k].content;
   $('selShelf_'+k+'_count').value=String(state.shelfCfg[k].count);
  });
