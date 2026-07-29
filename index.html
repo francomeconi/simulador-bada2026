@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Simulador 3D del stand v2.15 — BADA 2026 · Terraza al Cosmos (con fotos reales)</title>
+<title>Simulador 3D del stand v2.16 — BADA 2026 · Terraza al Cosmos (con fotos reales)</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
   :root{
@@ -62,7 +62,7 @@
 <body>
 
 <div class="top">
-  <h1>Simulador del stand v2.15 · BADA 2026
+  <h1>Simulador del stand v2.16 · BADA 2026
     <small>Terraza al Cosmos — con fotos reales de las obras y de la pared exterior</small>
   </h1>
   <div class="controls">
@@ -91,11 +91,18 @@
   </label>
   <label class="tgl"><input type="checkbox" id="chkSolid"><span>Paredes sólidas al ver desde afuera (no se ocultan)</span></label>
   <label class="tgl"><input type="checkbox" id="chkFases"><span>Cuadro de Fases lunares (pared de fondo, debajo de la Luna)</span></label>
-  <label class="tgl"><span>Mesa central — fotos:</span>
-   <select id="selMesaMode">
-    <option value="30x30">30×30 (2 filas de 3, a 20°)</option>
-    <option value="30x30x5">30×30 (2 filas de 5, sin marco)</option>
-    <option value="20x20">20×20 (2 filas de 7, a 35°)</option>
+  <label class="tgl"><span>Mesa — Lado A (mira a la izquierda):</span>
+   <select id="selMesaSideA">
+    <option value="lunas7">Lunas individuales 20×20 (fila fija de 7, sin marco)</option>
+    <option value="30x30x5">30×30 sin marco (5 fotos, elegibles)</option>
+    <option value="20x30x5">20×30 apaisada sin marco (5 fotos, elegibles)</option>
+   </select>
+  </label>
+  <label class="tgl"><span>Mesa — Lado B (mira a la derecha):</span>
+   <select id="selMesaSideB">
+    <option value="lunas7">Lunas individuales 20×20 (fila fija de 7, sin marco)</option>
+    <option value="30x30x5">30×30 sin marco (5 fotos, elegibles)</option>
+    <option value="20x30x5">20×30 apaisada sin marco (5 fotos, elegibles)</option>
    </select>
   </label>
   <label class="tgl"><span>Mesa central — base:</span>
@@ -273,7 +280,7 @@
 
 <div class="card">
   <h2>Orden de las fotos en la mesa</h2>
-  <p class="hint" style="margin:0 0 8px">Fila A mira hacia la pared izquierda, fila B mira hacia la derecha. Elegí qué foto va en cada posición (de izquierda a derecha tal como se ve en la planta).</p>
+  <p class="hint" style="margin:0 0 8px">Cada lado tiene su propio formato (elegilo arriba, en "Mesa — Lado A/B"). Acá elegís qué foto va en cada posición de ese lado (de izquierda a derecha tal como se ve en la planta). El modo "Lunas individuales" no tiene selección: siempre son las 7 fases en orden.
   <p class="lb" style="margin:0 0 4px">Fila A (mira a la izquierda)</p>
   <div class="row" id="mesaRowA"></div>
   <p class="lb" style="margin:10px 0 4px">Fila B (mira a la derecha)</p>
@@ -398,26 +405,29 @@ const MESA_PHOTOS={
  sq7:'Fase lunar 7 (menguante fina)',
  sq_ph:'[placeholder] 20×20 nuevo formato'
 };
-const state={stand:'azul',wallColor:'negro',retiroIzq:1,wallsSolid:true,mesaMode:'30x30x5',mesaBase:'cromada',muebleBlanco:false,pantallaVertical:false,fasesOn:true,
+const state={stand:'azul',wallColor:'negro',retiroIzq:1,wallsSolid:true,mesaModeA:'lunas7',mesaModeB:'30x30x5',mesaBase:'cromada',muebleBlanco:false,pantallaVertical:false,fasesOn:true,
  shelfCfg:{
   izqA:{content:'lunas7',count:1},izqB:{content:'20x30',count:1},izqC:{content:'20x30',count:1},
   derA:{content:'20x30',count:1},derB:{content:'20x30',count:1},derC:{content:'20x30',count:1},
   fondoA:{content:'lunas7',count:1},fondoB:{content:'30x30',count:1},fondoC:{content:'20x30',count:1}
  },
- mesaPhotos30:{rowA:['m_dolphin','m_helix','m_luna'],rowB:['m_pilares','m_sol','m_trifid']},
- mesaPhotos20:{rowA:['sq1','sq2','sq3','sq4','sq5','sq6','sq7'],rowB:['sq1','sq2','sq3','sq4','sq5','sq6','sq7']},
- // Modo 2 filas de 5, SIN marco (29/7: completado con las 10 fotos 30×30 reales,
- // ya sin repetir). Luna y Sol van adyacentes en la fila A, junto al detalle del Sol.
- mesaPhotos30x10:{rowA:['m_solzoom','m_sol','m_luna','m_helix','m_thor'],rowB:['m_manodios','m_ngc253','m_pilares','m_trifid','m_dolphin']},
+ // Mesa dividida en dos lados (A mira a la izquierda, B a la derecha), cada uno con su
+ // propio modo (29/7 pm): 'lunas7' (fila fija de 7 fases, no elegible), '30x30x5' o
+ // '20x30x5' (5 fotos elegibles cada uno, sin marco). mesaPhotoSets guarda la selección
+ // de fotos por lado y por modo, para no perderla al cambiar de modo y volver.
+ mesaPhotoSets:{
+  A:{'30x30x5':['m_solzoom','m_sol','m_luna','m_helix','m_thor'],'20x30x5':['h1','h2','h3','h4','h5']},
+  B:{'30x30x5':['m_manodios','m_ngc253','m_pilares','m_trifid','m_dolphin'],'20x30x5':['h6','v1','v2','v3','m2_ghost']}
+ },
  groups:{izquierda:[{format:'40x60',orient:'h',count:6}],fondo:[{format:'luna',orient:'h',count:1},{format:'fases',orient:'h',count:1}],derecha:[{format:'60x90',orient:'v',count:3}]},
  pieces:[],furnSel:null,furn:null};
 const $=id=>document.getElementById(id);
 function stand(){return STANDS[state.stand];}
-function activeMesaPhotos(){
- if(state.mesaMode==='20x20')return state.mesaPhotos20;
- if(state.mesaMode==='30x30x5')return state.mesaPhotos30x10;
- return state.mesaPhotos30;
-}
+const MESA_MODE_GEOM={
+ lunas7:{cols:7,pw:0.20,ph:0.20,gapX:0.02,tiltDeg:35,framed:false,rowOffset:0.28,fixed:true},
+ '30x30x5':{cols:5,pw:0.30,ph:0.30,gapX:0.02,tiltDeg:35,framed:false,rowOffset:0.37,fixed:false},
+ '20x30x5':{cols:5,pw:0.30,ph:0.20,gapX:0.02,tiltDeg:35,framed:false,rowOffset:0.30,fixed:false}
+};
 function izqOffset(){return state.retiroIzq;}
 function defaultFurn(){
  const s=stand();
@@ -548,15 +558,10 @@ function wireShelf(key){
  nSel.onchange=e=>{state.shelfCfg[key].count=parseInt(e.target.value,10);build3D();};
 }
 ['izqA','izqB','izqC','derA','derB','derC','fondoA','fondoB','fondoC'].forEach(wireShelf);
-$('selMesaMode').value=state.mesaMode;
-$('selMesaMode').onchange=e=>{
- state.mesaMode=e.target.value;
- // Conveniencia: si se pasa a 20x20, el exhibidor individual del Baúl 2 se apaga
- // (mismo concepto de foto, ahora en la mesa); al volver a 30x30, se reactiva.
- // Podés volver a tocarlo a mano en el panel de mobiliario en cualquier momento.
- if(state.furn.exhibidor)state.furn.exhibidor.on=(state.mesaMode==='30x30');
- renderMesaOrder();renderFurnToggles();build3D();
-};
+$('selMesaSideA').value=state.mesaModeA;
+$('selMesaSideA').onchange=e=>{state.mesaModeA=e.target.value;renderMesaOrder();build3D();};
+$('selMesaSideB').value=state.mesaModeB;
+$('selMesaSideB').onchange=e=>{state.mesaModeB=e.target.value;renderMesaOrder();build3D();};
 $('selMesaBase').value=state.mesaBase;
 $('selMesaBase').onchange=e=>{
  state.mesaBase=e.target.value;
@@ -877,23 +882,21 @@ function buildMesa(){
  // una vez rotada la mesa 90°). Dos filas separadas en Z, cada una mirando hacia afuera:
  // fila en +Z mira hacia +Z (yaw 0) → queda hacia la pared izquierda tras la rotación;
  // fila en -Z mira hacia -Z (yaw 180°) → queda hacia la pared derecha.
- const mp=activeMesaPhotos();
- const mode=state.mesaMode;
- let cols,pw,ph,gapX,rowOffset,tiltDeg,framed;
- if(mode==='20x20'){cols=7;pw=0.22;ph=0.22;gapX=0.02;rowOffset=0.28;tiltDeg=35;framed=true;}
- else if(mode==='30x30x5'){cols=5;pw=0.30;ph=0.30;gapX=0.02;rowOffset=0.37;tiltDeg=35;framed=false;}
- else{cols=3;pw=0.34;ph=0.30;gapX=0.14;rowOffset=0.37;tiltDeg=20;framed=true;}
- const keysRowA=mp.rowA;
- const keysRowB=mp.rowB;
- const totW=cols*pw+(cols-1)*gapX;
- for(let c=0;c<cols;c++){
-  const px=-totW/2+pw/2+c*(pw+gapX);
-  const easelA=buildAcrylicEasel(pw,ph,keysRowA[c],0,tiltDeg,framed);
-  easelA.position.set(px,topY,rowOffset);
-  g.add(easelA);
-  const easelB=buildAcrylicEasel(pw,ph,keysRowB[c],Math.PI,tiltDeg,framed);
-  easelB.position.set(px,topY,-rowOffset);
-  g.add(easelB);
+ // Mesa dividida en dos lados independientes (A mira hacia +Z → pared izquierda tras
+ // la rotación; B mira hacia -Z → pared derecha), cada uno con su propio modo/fotos.
+ for(const side of['A','B']){
+  const mode=side==='A'?state.mesaModeA:state.mesaModeB;
+  const geom=MESA_MODE_GEOM[mode];
+  const keys=geom.fixed?['sq1','sq2','sq3','sq4','sq5','sq6','sq7']:state.mesaPhotoSets[side][mode];
+  const yaw=side==='A'?0:Math.PI;
+  const zSign=side==='A'?1:-1;
+  const totW=geom.cols*geom.pw+(geom.cols-1)*geom.gapX;
+  for(let c=0;c<geom.cols;c++){
+   const px=-totW/2+geom.pw/2+c*(geom.pw+geom.gapX);
+   const easel=buildAcrylicEasel(geom.pw,geom.ph,keys[c],yaw,geom.tiltDeg,geom.framed);
+   easel.position.set(px,topY,zSign*geom.rowOffset);
+   g.add(easel);
+  }
  }
  return g;
 }
@@ -1240,11 +1243,10 @@ function buildConfigObject(){
   muebleBlanco:state.muebleBlanco,
   pantallaVertical:state.pantallaVertical,
   fasesOn:state.fasesOn,
-  mesaMode:state.mesaMode,
+  mesaModeA:state.mesaModeA,
+  mesaModeB:state.mesaModeB,
   mesaBase:state.mesaBase,
-  mesaPhotos30:state.mesaPhotos30,
-  mesaPhotos20:state.mesaPhotos20,
-  mesaPhotos30x10:state.mesaPhotos30x10,
+  mesaPhotoSets:JSON.parse(JSON.stringify(state.mesaPhotoSets)),
   furn:furnOut
  };
 }
@@ -1267,19 +1269,18 @@ function applyConfig(cfg){
  if(typeof cfg.muebleBlanco==='boolean')state.muebleBlanco=cfg.muebleBlanco;
  if(typeof cfg.pantallaVertical==='boolean')state.pantallaVertical=cfg.pantallaVertical;
  if(typeof cfg.fasesOn==='boolean')state.fasesOn=cfg.fasesOn;
- if(typeof cfg.mesaMode==='string')state.mesaMode=cfg.mesaMode;
+ if(typeof cfg.mesaModeA==='string')state.mesaModeA=cfg.mesaModeA;
+ if(typeof cfg.mesaModeB==='string')state.mesaModeB=cfg.mesaModeB;
  if(typeof cfg.mesaBase==='string')state.mesaBase=cfg.mesaBase;
- if(cfg.mesaPhotos30&&Array.isArray(cfg.mesaPhotos30.rowA)&&Array.isArray(cfg.mesaPhotos30.rowB)){
-  state.mesaPhotos30.rowA=cfg.mesaPhotos30.rowA.slice(0,3);
-  state.mesaPhotos30.rowB=cfg.mesaPhotos30.rowB.slice(0,3);
- }
- if(cfg.mesaPhotos20&&Array.isArray(cfg.mesaPhotos20.rowA)&&Array.isArray(cfg.mesaPhotos20.rowB)){
-  state.mesaPhotos20.rowA=cfg.mesaPhotos20.rowA.slice(0,7);
-  state.mesaPhotos20.rowB=cfg.mesaPhotos20.rowB.slice(0,7);
- }
- if(cfg.mesaPhotos30x10&&Array.isArray(cfg.mesaPhotos30x10.rowA)&&Array.isArray(cfg.mesaPhotos30x10.rowB)){
-  state.mesaPhotos30x10.rowA=cfg.mesaPhotos30x10.rowA.slice(0,5);
-  state.mesaPhotos30x10.rowB=cfg.mesaPhotos30x10.rowB.slice(0,5);
+ if(cfg.mesaPhotoSets){
+  for(const side of['A','B']){
+   if(!cfg.mesaPhotoSets[side])continue;
+   for(const m of['30x30x5','20x30x5']){
+    if(Array.isArray(cfg.mesaPhotoSets[side][m])){
+     state.mesaPhotoSets[side][m]=cfg.mesaPhotoSets[side][m].slice(0,5);
+    }
+   }
+  }
  }
  if(cfg.furn){
   for(const k in cfg.furn){
@@ -1301,7 +1302,8 @@ function applyConfig(cfg){
   $('selShelf_'+k+'_content').value=state.shelfCfg[k].content;
   $('selShelf_'+k+'_count').value=String(state.shelfCfg[k].count);
  });
- $('selMesaMode').value=state.mesaMode;
+ $('selMesaSideA').value=state.mesaModeA;
+ $('selMesaSideB').value=state.mesaModeB;
  $('selMesaBase').value=state.mesaBase;
  updateMesaFootprint();
  $('chkMuebleBlanco').checked=state.muebleBlanco;
@@ -1383,23 +1385,30 @@ function resetToDefault(){
 }
 $('btnResetState').onclick=resetToDefault;
 function renderMesaOrder(){
- const n=state.mesaMode==='20x20'?7:(state.mesaMode==='30x30x5'?5:3);
- const mp=activeMesaPhotos();
- const mkRow=(hostId,rowKey)=>{
+ const mkSide=(hostId,side)=>{
   const host=$(hostId);host.innerHTML='';
-  for(let i=0;i<n;i++){
+  const mode=side==='A'?state.mesaModeA:state.mesaModeB;
+  const geom=MESA_MODE_GEOM[mode];
+  if(geom.fixed){
+   const p=document.createElement('p');p.className='hint';p.style.margin='0';
+   p.textContent='Bloque fijo: fases lunares 1 a 7 en orden — sin selección de foto para este lado.';
+   host.appendChild(p);
+   return;
+  }
+  const arr=state.mesaPhotoSets[side][mode];
+  for(let i=0;i<geom.cols;i++){
    const sel=document.createElement('select');
    for(const k in MESA_PHOTOS){
     const o=document.createElement('option');o.value=k;o.textContent=MESA_PHOTOS[k];
     sel.appendChild(o);
    }
-   sel.value=mp[rowKey][i];
-   sel.onchange=()=>{mp[rowKey][i]=sel.value;build3D();};
+   sel.value=arr[i];
+   sel.onchange=()=>{arr[i]=sel.value;build3D();};
    host.appendChild(sel);
   }
  };
- mkRow('mesaRowA','rowA');
- mkRow('mesaRowB','rowB');
+ mkSide('mesaRowA','A');
+ mkSide('mesaRowB','B');
 }
 function fullRender(){renderFurnToggles();renderPlan();render2D();build3D();updateFurnInfo();}
 window.addEventListener('resize',()=>{resize3D();renderPlan();render2D();});
