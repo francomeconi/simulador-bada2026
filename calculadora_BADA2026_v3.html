@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora económica · BADA 2026 · Franco Meconi</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+  :root{
+    --bg:#0B0D18;
+    --card:#12162A;
+    --card-alt:#171C34;
+    --line:#262C4A;
+    --text:#E7E6F0;
+    --muted:#9591B8;
+    --gold:#E3B873;
+    --violet:#9C8FE0;
+    --green:#7FCB9E;
+    --red:#E28080;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:radial-gradient(ellipse at top, #151A32 0%, #0B0D18 60%);
+    color:var(--text); font-family:'Inter',sans-serif; padding:32px 20px 80px;
+  }
+  .wrap{max-width:1080px; margin:0 auto;}
+  h1{
+    font-family:'Fraunces',serif; font-weight:600; font-size:clamp(28px,4vw,40px);
+    margin:0 0 4px; letter-spacing:-0.01em;
+  }
+  .subtitle{color:var(--muted); font-size:14px; margin-bottom:32px;}
+  .subtitle b{color:var(--gold); font-weight:600;}
+  h2{
+    font-family:'Fraunces',serif; font-weight:600; font-size:19px; margin:0 0 14px;
+    display:flex; align-items:center; gap:10px; color:var(--text);
+  }
+  h2 .num{
+    font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--gold);
+    border:1px solid var(--gold); border-radius:999px; width:22px; height:22px;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:22px 24px; margin-bottom:20px;
+  }
+  .grid{display:grid; gap:14px;}
+  .grid-4{grid-template-columns:repeat(4,1fr);}
+  .grid-3{grid-template-columns:repeat(3,1fr);}
+  .grid-2{grid-template-columns:repeat(2,1fr);}
+  @media(max-width:720px){ .grid-4,.grid-3,.grid-2{grid-template-columns:1fr 1fr;} }
+  label{display:block; font-size:12px; color:var(--muted); margin-bottom:5px;}
+  input[type=number], select{
+    width:100%; background:var(--card-alt); border:1px solid var(--line); color:var(--text);
+    border-radius:8px; padding:9px 10px; font-family:'JetBrains Mono',monospace; font-size:13px;
+  }
+  select{font-family:'Inter',sans-serif;}
+  input[type=range]{width:100%; accent-color:var(--gold);}
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th{
+    text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.04em;
+    color:var(--muted); font-weight:500; padding:6px 8px; border-bottom:1px solid var(--line);
+  }
+  td{padding:10px 8px; border-bottom:1px solid var(--line); vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  .fmt-name{font-weight:600;}
+  .fmt-sub{color:var(--muted); font-size:11px;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .num-input{width:88px;}
+  .margin-pos{color:var(--green);}
+  .pill{
+    display:inline-block; background:var(--card-alt); border:1px solid var(--line);
+    border-radius:6px; padding:2px 7px; font-size:11px; color:var(--muted);
+  }
+  .warn{
+    background:rgba(227,184,115,.08); border:1px solid rgba(227,184,115,.35);
+    border-radius:10px; padding:10px 14px; font-size:12.5px; color:var(--gold); margin-top:10px;
+  }
+  .result-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:12px;}
+  @media(max-width:900px){ .result-grid{grid-template-columns:repeat(2,1fr);} }
+  .result-card{
+    background:var(--card-alt); border:1px solid var(--line); border-radius:12px; padding:16px;
+  }
+  .result-card .label{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px;}
+  .result-card .value{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:19px;}
+  .result-card .usd{font-size:11px; color:var(--muted); margin-top:2px;}
+  .result-card.neto-pos .value{color:var(--green);}
+  .result-card.neto-neg .value{color:var(--red);}
+  .checklist{display:flex; flex-direction:column; gap:8px;}
+  .check-row{
+    display:flex; justify-content:space-between; align-items:center; padding:10px 14px;
+    border-radius:8px; background:var(--card-alt); border:1px solid var(--line); font-size:13px;
+  }
+  .check-row.done{border-color:rgba(127,203,158,.4);}
+  .badge-done{color:var(--green); font-family:'JetBrains Mono',monospace; font-size:12px;}
+  .badge-pending{color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:12px;}
+  .toggle-row{display:flex; align-items:center; gap:10px; font-size:13px; margin-bottom:14px;}
+  .toggle-row input{width:16px; height:16px; accent-color:var(--gold);}
+  button{
+    background:var(--gold); color:#1A1408; border:none; border-radius:8px;
+    padding:11px 20px; font-weight:600; font-size:13.5px; cursor:pointer; font-family:'Inter',sans-serif;
+  }
+  button:hover{filter:brightness(1.08);}
+  button.secondary{background:transparent; border:1px solid var(--line); color:var(--text);}
+  .promo-row{
+    display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--muted);
+    background:var(--card-alt); border-radius:8px; padding:8px 12px; margin-top:6px;
+  }
+  .promo-row input{width:60px;}
+  footer{color:var(--muted); font-size:11.5px; text-align:center; margin-top:40px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Calculadora económica — BADA 2026</h1>
+  <div class="subtitle">Franco Meconi — Fotografía Astronómica · catálogo tomado del <b>Google Sheets</b> (fuente de verdad) · regenerada 5/8/2026</div>
+
+  <div class="card" id="syncCard">
+    <h2><span class="num">↻</span>Sincronización con el Sheets</h2>
+    <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+      <button id="syncBtn" class="secondary">Actualizar desde el Sheets</button>
+      <span class="mono" id="syncStatus" style="font-size:12px; color:var(--muted);">Usando valores por defecto (cargados 5/8/2026)</span>
+    </div>
+  </div>
+
+  <!-- COSTOS FIJOS -->
+  <div class="card">
+    <h2><span class="num">1</span>Costos fijos</h2>
+    <div class="grid grid-4">
+      <div>
+        <label>Stand</label>
+        <select id="standSelect">
+          <option value="2700" selected>Azul 189 (reservado, c/desc. anticipado)</option>
+          <option value="2300">Fucsia D — 2.300</option>
+          <option value="2400">Violeta F — 2.400</option>
+          <option value="2520">Verde A — 2.520</option>
+          <option value="3000">Azul (sin descuento) — 3.000</option>
+          <option value="3300">Amarillo A — 3.300</option>
+          <option value="4560">Violeta C — 4.560</option>
+        </select>
+      </div>
+      <div>
+        <label>Compartido entre</label>
+        <select id="sharedSelect">
+          <option value="1" selected>1 artista</option>
+          <option value="2">2 artistas</option>
+          <option value="3">3 artistas</option>
+        </select>
+      </div>
+      <div>
+        <label>Entelado + ploteo (ARS)</label>
+        <input type="number" id="ploteo" value="1300000" step="10000">
+      </div>
+      <div>
+        <label>Otros fijos — alquileres/mesa/exhibidores (ARS)</label>
+        <input type="number" id="otros" value="500000" step="10000">
+      </div>
+    </div>
+    <div class="grid grid-4" style="margin-top:14px;">
+      <div>
+        <label>Tipo de cambio ARS/USD</label>
+        <input type="number" id="tc" value="1525" step="1">
+      </div>
+    </div>
+    <div class="warn">Stand: precio de lista USD 3.000 con 10% de descuento por reserva anticipada = <b>USD 2.700</b> (default). Se le aplica 21% IVA automáticamente. El depósito del 50% ya está pagado.</div>
+  </div>
+
+  <!-- CATALOGO -->
+  <div class="card">
+    <h2><span class="num">2</span>Catálogo (7 formatos, 38 obras)</h2>
+    <table id="productsTable">
+      <thead>
+        <tr>
+          <th>Formato</th><th>Precio</th><th>Costo</th><th>Stock producido</th><th>Vendidos</th><th>Margen unit.</th>
+        </tr>
+      </thead>
+      <tbody id="productsBody"></tbody>
+    </table>
+
+    <div class="promo-row">
+      <span style="min-width:210px;">🌙 20×20 — combos 3×$180.000 vendidos</span>
+      <input type="number" id="combo20x3" value="0" min="0" step="1">
+      <span style="min-width:230px; margin-left:14px;">Ciclos completos (7 fases) $400.000</span>
+      <input type="number" id="combo20ciclo" value="0" min="0" step="1">
+    </div>
+    <div class="promo-row">
+      <span style="min-width:210px;">🖼️ 30×30 — combos 2×$220.000 vendidos</span>
+      <input type="number" id="combo30x2" value="0" min="0" step="1">
+    </div>
+    <div class="warn" id="repoNote" style="display:none;"></div>
+  </div>
+
+  <!-- SOLVER -->
+  <div class="card">
+    <h2><span class="num">3</span>Solver de objetivos</h2>
+    <div class="grid grid-3">
+      <div>
+        <label>Objetivo</label>
+        <select id="objetivo">
+          <option value="0">Recuperar la inversión</option>
+          <option value="1000">+ USD 1.000</option>
+          <option value="2000">+ USD 2.000</option>
+          <option value="3000">+ USD 3.000</option>
+        </select>
+      </div>
+      <div style="display:flex; align-items:flex-end;">
+        <label style="display:flex; align-items:center; gap:8px; margin:0;">
+          <input type="checkbox" id="contandoLuna" checked style="width:16px;height:16px;accent-color:var(--gold);"> Contando vender la Luna (1 unidad)
+        </label>
+      </div>
+      <div style="display:flex; align-items:flex-end;">
+        <button id="solveBtn">Calcular cantidades</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VISTA PESIMISTA -->
+  <div class="toggle-row">
+    <input type="checkbox" id="pesimista">
+    <label style="margin:0; font-size:13px; color:var(--text);">Vista pesimista — descuenta el costo de <b>todo lo producido</b> (no solo lo vendido)</label>
+  </div>
+
+  <!-- RESULTADOS -->
+  <div class="card">
+    <h2><span class="num">4</span>Resultado</h2>
+    <div class="result-grid">
+      <div class="result-card">
+        <div class="label">Inversión fija</div>
+        <div class="value mono" id="rFijos">—</div>
+        <div class="usd" id="rFijosUsd">—</div>
+      </div>
+      <div class="result-card">
+        <div class="label">Inversión en producción</div>
+        <div class="value mono" id="rProduccion">—</div>
+        <div class="usd" id="rProduccionUsd">—</div>
+      </div>
+      <div class="result-card">
+        <div class="label">Caja previa total</div>
+        <div class="value mono" id="rCaja">—</div>
+        <div class="usd" id="rCajaUsd">—</div>
+      </div>
+      <div class="result-card">
+        <div class="label">Facturación</div>
+        <div class="value mono" id="rFact">—</div>
+        <div class="usd" id="rFactUsd">—</div>
+      </div>
+      <div class="result-card" id="netoCard">
+        <div class="label">Resultado neto</div>
+        <div class="value mono" id="rNeto">—</div>
+        <div class="usd" id="rNetoUsd">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHECKLIST -->
+  <div class="card">
+    <h2><span class="num">5</span>Checklist de objetivos</h2>
+    <div class="checklist" id="checklist"></div>
+  </div>
+
+  <!-- STOCK REMANENTE -->
+  <div class="card">
+    <h2><span class="num">6</span>Stock con el que volvés</h2>
+    <table>
+      <thead><tr><th>Formato</th><th>Producido</th><th>Vendido</th><th>Remanente</th><th>Valor remanente</th></tr></thead>
+      <tbody id="remanenteBody"></tbody>
+    </table>
+    <div class="warn">Este stock <b>no es pérdida</b> — es capital parado, recuperable después de la feria (vía la tienda online o encargos posteriores). Solo se descuenta del resultado si activás <b>vista pesimista</b> arriba.</div>
+  </div>
+
+  <footer>Fuente del catálogo: Google Sheets "Catálogo BADA 2026" · Fuente de lo físico del stand: Dossier BADA2026 v22 · Franco Meconi — Fotografía Astronómica</footer>
+</div>
+
+<script>
+const fmtARS = n => '$' + Math.round(n).toLocaleString('es-AR');
+const fmtUSD = (n, tc) => 'USD ' + Math.round(n/tc).toLocaleString('es-AR');
+
+// ⚠️ REEMPLAZAR: pegar acá la URL del CSV publicado (Archivo → Compartir → Publicar en la web → esta hoja → CSV)
+// Formato típico: https://docs.google.com/spreadsheets/d/e/2PACX-xxxxx/pub?output=csv
+const SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQoqmRq4pLu3hKyyBa-rPAdbmiiNAtF5Z96gBSuP3TwgUa-dZzDSb1YKx72zaLJotMZXiln_vKBFulV/pub?gid=1083859714&single=true&output=csv';
+
+// mapea el "Tamaño" tal cual aparece en el Sheets a un id de producto de la calculadora
+const TAMANO_A_ID = {
+  '100×150': 'pluna',
+  '60×40': 'p60x40',
+  '20×20': 'p20x20',
+  '60×90': 'p60x90',
+  '100×30': 'pfases',
+  '30×30': 'p30x30',
+  '20×30': 'p20x30',
+};
+
+function parseCSVLine(line){
+  const out = []; let cur=''; let inQuotes=false;
+  for(let i=0;i<line.length;i++){
+    const c = line[i];
+    if(inQuotes){
+      if(c==='"' && line[i+1]==='"'){ cur+='"'; i++; }
+      else if(c==='"'){ inQuotes=false; }
+      else cur+=c;
+    } else {
+      if(c==='"') inQuotes=true;
+      else if(c===','){ out.push(cur); cur=''; }
+      else cur+=c;
+    }
+  }
+  out.push(cur);
+  return out;
+}
+
+function parseMoney(s){
+  if(!s) return NaN;
+  return parseFloat(String(s).replace(/[^0-9.-]/g,''));
+}
+
+async function sincronizarConSheets(){
+  const statusEl = document.getElementById('syncStatus');
+  if(!SHEETS_CSV_URL){
+    statusEl.textContent = 'Sin URL de Sheets configurada — usando valores por defecto. Ver instrucciones abajo del código.';
+    return;
+  }
+  statusEl.textContent = 'Sincronizando…';
+  try{
+    const res = await fetch(SHEETS_CSV_URL + (SHEETS_CSV_URL.includes('?') ? '&' : '?') + 'cachebust=' + Date.now());
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const rows = text.split('\n').map(parseCSVLine).filter(r=>r.length>1);
+    const header = rows[0].map(h=>h.trim());
+    const idx = name => header.findIndex(h=>h.toLowerCase().includes(name.toLowerCase()));
+    const iTamano = idx('Tamaño');
+    const iPrecio = idx('Precio');
+    const iCosto = idx('Costo');
+    const iStock = idx('Stock feria');
+
+    if(iTamano<0 || iPrecio<0 || iCosto<0){
+      statusEl.textContent = 'No encontré las columnas Tamaño/Precio/Costo en el Sheets — revisá los encabezados.';
+      return;
+    }
+
+    const agregados = {};
+    rows.slice(1).forEach(r=>{
+      const precio = parseMoney(r[iPrecio]);
+      const costo = parseMoney(r[iCosto]);
+      const tamano = (r[iTamano]||'').trim();
+      if(isNaN(precio) || isNaN(costo) || !tamano) return; // fila de encabezado de sección, no de datos
+      const id = TAMANO_A_ID[tamano];
+      if(!id) return;
+      if(!agregados[id]) agregados[id] = {precio, costo, stock:0, obras:0};
+      agregados[id].precio = precio; // asume precio uniforme dentro del formato, toma el último leído
+      agregados[id].costo = costo;
+      agregados[id].obras += 1;
+      const stockVal = iStock>=0 ? parseMoney(r[iStock]) : NaN;
+      agregados[id].stock += isNaN(stockVal) ? 0 : stockVal;
+    });
+
+    let actualizados = 0;
+    PRODUCTS.forEach(p=>{
+      const a = agregados[p.id];
+      if(!a) return;
+      p.precio = a.precio;
+      p.costo = a.costo;
+      if(iStock>=0 && a.stock>0) p.stock = a.stock;
+      actualizados++;
+    });
+
+    buildTable();
+    calcular();
+    const ahora = new Date().toLocaleString('es-AR');
+    statusEl.textContent = iStock>=0
+      ? `Sincronizado (${actualizados}/7 formatos, incluye stock) — ${ahora}`
+      : `Sincronizado (${actualizados}/7 formatos, precio/costo — falta columna "Stock feria" en el Sheets) — ${ahora}`;
+  } catch(err){
+    statusEl.textContent = 'No se pudo sincronizar (' + err.message + ') — usando valores por defecto.';
+  }
+}
+document.getElementById('syncBtn').addEventListener('click', sincronizarConSheets);
+
+// Catálogo — tipo: 'takeaway' (tope de venta = stock físico producido, dinámico) o 'encargo' (tope de venta = edición total, fijo — se sigue vendiendo por encargo aunque el stock de exhibición sea 1)
+const PRODUCTS = [
+  {id:'p60x40', nombre:'60×40 — pared izquierda', sub:'6 obras · ed. 10 c/u', precio:600000, costo:98000, stock:6, vendidos:1, tope:60, tipo:'encargo'},
+  {id:'p60x90', nombre:'60×90 — pared derecha', sub:'3 obras · ed. 10 c/u', precio:1000000, costo:190000, stock:3, vendidos:1, tope:30, tipo:'encargo'},
+  {id:'pluna', nombre:'La Luna 100×150', sub:'1 obra · edición de 7', precio:3000000, costo:660000, stock:1, vendidos:1, tope:7, tipo:'encargo'},
+  {id:'pfases', nombre:'Fases lunares 100×30', sub:'1 obra · edición de 15 · costo referencial', precio:750000, costo:175000, stock:1, vendidos:0, tope:15, tipo:'encargo'},
+  {id:'p30x30', nombre:'30×30 — mesa', sub:'10 obras · asimétrico (Sol/Luna 5, resto 3)', precio:120000, costo:16000, stock:34, vendidos:10, tipo:'takeaway'},
+  {id:'p20x30', nombre:'20×30 — revistero (Baúl 1)', sub:'10 obras · ed. 10 c/u, 3 stock c/u', precio:100000, costo:11000, stock:30, vendidos:10, tipo:'takeaway'},
+  {id:'p20x20', nombre:'20×20 — Lunas (7 fases)', sub:'stock escalonado: Llena 15, resto 8 c/u', precio:70000, costo:11000, stock:63, vendidos:20, tipo:'takeaway'},
+];
+
+function buildTable(){
+  const body = document.getElementById('productsBody');
+  body.innerHTML = '';
+  PRODUCTS.forEach(p=>{
+    const tope = p.tipo === 'takeaway' ? p.stock : p.tope;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><div class="fmt-name">${p.nombre}</div><div class="fmt-sub">${p.sub} · <span class="pill">${p.tipo === 'takeaway' ? 'take-away' : 'encargo'}</span></div></td>
+      <td><input type="number" class="num-input mono" id="${p.id}_precio" value="${p.precio}" step="1000"></td>
+      <td><input type="number" class="num-input mono" id="${p.id}_costo" value="${p.costo}" step="1000"></td>
+      <td><input type="number" class="num-input mono" id="${p.id}_stock" value="${p.stock}" step="1"></td>
+      <td>
+        <input type="range" id="${p.id}_vendidos_range" min="0" max="${tope}" value="${p.vendidos}">
+        <div class="mono" style="font-size:11px; color:var(--muted); margin-top:2px;"><span id="${p.id}_vendidos_val">${p.vendidos}</span> / <span id="${p.id}_tope_val">${tope}</span> máx (${p.tipo === 'takeaway' ? 'stock producido' : 'edición'})</div>
+      </td>
+      <td class="mono margin-pos" id="${p.id}_margen">—</td>
+    `;
+    body.appendChild(tr);
+  });
+
+  // para take-away: el stock producido define en vivo el tope del slider de vendidos
+  PRODUCTS.filter(p=>p.tipo==='takeaway').forEach(p=>{
+    document.getElementById(p.id+'_stock').addEventListener('input', (e)=>{
+      const nuevoTope = Math.max(0, +e.target.value);
+      const range = document.getElementById(p.id+'_vendidos_range');
+      range.max = nuevoTope;
+      if(+range.value > nuevoTope) range.value = nuevoTope;
+      document.getElementById(p.id+'_tope_val').textContent = nuevoTope;
+      calcular();
+    });
+  });
+}
+buildTable();
+
+function getInputs(){
+  const o = {};
+  PRODUCTS.forEach(p=>{
+    o[p.id] = {
+      precio: +document.getElementById(p.id+'_precio').value,
+      costo: +document.getElementById(p.id+'_costo').value,
+      stock: +document.getElementById(p.id+'_stock').value,
+      vendidos: +document.getElementById(p.id+'_vendidos_range').value,
+    };
+  });
+  return o;
+}
+
+function calcular(){
+  const tc = +document.getElementById('tc').value;
+  const standUsd = +document.getElementById('standSelect').value;
+  const shared = +document.getElementById('sharedSelect').value;
+  const ploteo = +document.getElementById('ploteo').value;
+  const otros = +document.getElementById('otros').value;
+  const pesimista = document.getElementById('pesimista').checked;
+  const combo20x3 = +document.getElementById('combo20x3').value;
+  const combo20ciclo = +document.getElementById('combo20ciclo').value;
+  const combo30x2 = +document.getElementById('combo30x2').value;
+
+  const inputs = getInputs();
+
+  // update margen + vendidos label
+  PRODUCTS.forEach(p=>{
+    const d = inputs[p.id];
+    document.getElementById(p.id+'_vendidos_val').textContent = d.vendidos;
+    const margen = d.precio - d.costo;
+    document.getElementById(p.id+'_margen').textContent = fmtARS(margen);
+  });
+
+  // inversion fija
+  const standArs = standUsd * 1.21 / shared * tc;
+  const fijos = standArs + ploteo + otros;
+
+  // inversion en produccion
+  let produccion = 0;
+  PRODUCTS.forEach(p=>{ produccion += inputs[p.id].costo * inputs[p.id].stock; });
+
+  const caja = fijos + produccion;
+
+  // facturacion: unidades sueltas a precio de lista + combos a precio de combo
+  const unidadesEnCombo20 = combo20x3*3 + combo20ciclo*7;
+  const unidadesEnCombo30 = combo30x2*2;
+  let facturacion = 0;
+  let totalUnidadesVendidas = 0;
+  PRODUCTS.forEach(p=>{
+    const d = inputs[p.id];
+    let vendidosSueltos = d.vendidos;
+    if(p.id === 'p20x20') vendidosSueltos = Math.max(0, d.vendidos - unidadesEnCombo20);
+    if(p.id === 'p30x30') vendidosSueltos = Math.max(0, d.vendidos - unidadesEnCombo30);
+    facturacion += vendidosSueltos * d.precio;
+    totalUnidadesVendidas += d.vendidos;
+  });
+  facturacion += combo20x3*180000 + combo20ciclo*400000 + combo30x2*220000;
+
+  // costo de lo vendido (o de todo lo producido si es pesimista)
+  let costoVendido = 0;
+  PRODUCTS.forEach(p=>{
+    const d = inputs[p.id];
+    const unidadesCosto = pesimista ? Math.max(d.stock, d.vendidos) : d.vendidos;
+    costoVendido += unidadesCosto * d.costo;
+  });
+
+  const neto = facturacion - costoVendido - fijos;
+
+  // pintar resultados
+  document.getElementById('rFijos').textContent = fmtARS(fijos);
+  document.getElementById('rFijosUsd').textContent = fmtUSD(fijos, tc);
+  document.getElementById('rProduccion').textContent = fmtARS(produccion);
+  document.getElementById('rProduccionUsd').textContent = fmtUSD(produccion, tc);
+  document.getElementById('rCaja').textContent = fmtARS(caja);
+  document.getElementById('rCajaUsd').textContent = fmtUSD(caja, tc);
+  document.getElementById('rFact').textContent = fmtARS(facturacion) + ` (${totalUnidadesVendidas} obras · ${Math.round(totalUnidadesVendidas/4)}/día)`;
+  document.getElementById('rFactUsd').textContent = fmtUSD(facturacion, tc);
+  document.getElementById('rNeto').textContent = fmtARS(neto);
+  document.getElementById('rNetoUsd').textContent = fmtUSD(neto, tc);
+  const netoCard = document.getElementById('netoCard');
+  netoCard.classList.remove('neto-pos','neto-neg');
+  netoCard.classList.add(neto>=0 ? 'neto-pos':'neto-neg');
+
+  // nota de reposicion
+  let repoLines = [];
+  PRODUCTS.forEach(p=>{
+    const d = inputs[p.id];
+    if(d.vendidos > d.stock){
+      const falta = d.vendidos - d.stock;
+      repoLines.push(`${p.nombre}: ${falta} unidad(es) a reponer${p.id==='pluna' ? ' (encargo, entrega 7 días)' : ''}`);
+    }
+  });
+  const repoBox = document.getElementById('repoNote');
+  if(repoLines.length){
+    repoBox.style.display = 'block';
+    repoBox.innerHTML = '<b>Reposición durante la feria:</b><br>' + repoLines.join('<br>');
+  } else {
+    repoBox.style.display = 'none';
+  }
+
+  // checklist de objetivos
+  const objetivos = [
+    {label:'Recuperar la inversión', usd:0},
+    {label:'+ USD 1.000', usd:1000},
+    {label:'+ USD 2.000', usd:2000},
+    {label:'+ USD 3.000', usd:3000},
+  ];
+  const netoUsd = neto/tc;
+  const checklist = document.getElementById('checklist');
+  checklist.innerHTML = '';
+  objetivos.forEach(o=>{
+    const cumplido = netoUsd >= o.usd;
+    const row = document.createElement('div');
+    row.className = 'check-row' + (cumplido ? ' done' : '');
+    row.innerHTML = `<span>${o.label}</span><span class="${cumplido?'badge-done':'badge-pending'}">${cumplido ? '✓ cumplido' : 'faltan ' + fmtUSD((o.usd*tc)-neto, tc)}</span>`;
+    checklist.appendChild(row);
+  });
+
+  // stock remanente
+  const remBody = document.getElementById('remanenteBody');
+  remBody.innerHTML = '';
+  let remanenteTotal = 0;
+  PRODUCTS.forEach(p=>{
+    const d = inputs[p.id];
+    const remanente = Math.max(0, d.stock - d.vendidos);
+    const valor = remanente * d.costo;
+    remanenteTotal += valor;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${p.nombre}</td><td class="mono">${d.stock}</td><td class="mono">${d.vendidos}</td><td class="mono">${remanente}</td><td class="mono">${fmtARS(valor)}</td>`;
+    remBody.appendChild(tr);
+  });
+  const trTotal = document.createElement('tr');
+  trTotal.innerHTML = `<td style="font-weight:600;">Total</td><td></td><td></td><td></td><td class="mono" style="font-weight:700;color:var(--gold);">${fmtARS(remanenteTotal)}</td>`;
+  remBody.appendChild(trTotal);
+
+  return {fijos, produccion, caja, facturacion, neto, tc};
+}
+
+// SOLVER
+document.getElementById('solveBtn').addEventListener('click', ()=>{
+  const objetivoUsd = +document.getElementById('objetivo').value;
+  const contandoLuna = document.getElementById('contandoLuna').checked;
+  const tc = +document.getElementById('tc').value;
+
+  // fijar luna
+  document.getElementById('pluna_vendidos_range').value = contandoLuna ? 1 : 0;
+
+  // proporcion base si todo esta en cero
+  const base = {p60x40:6, p60x90:3, p30x30:20, p20x30:20, p20x20:40}; // proporcion base tipo 30/12/8/3 escalada al catalogo nuevo
+  let current = {};
+  ['p60x40','p60x90','p30x30','p20x30','p20x20'].forEach(id=>{
+    current[id] = +document.getElementById(id+'_vendidos_range').value;
+  });
+  const allZero = Object.values(current).every(v=>v===0);
+  if(allZero) current = base;
+
+  // iterar escalando factor hasta alcanzar objetivo (busqueda simple)
+  let factor = 1;
+  for(let iter=0; iter<400; iter++){
+    ['p60x40','p60x90','p30x30','p20x30','p20x20'].forEach(id=>{
+      const range = document.getElementById(id+'_vendidos_range');
+      const tope = +range.max; // dinámico: stock producido (take-away) o edición (encargo)
+      const val = Math.min(tope, Math.ceil(current[id]*factor));
+      range.value = val;
+    });
+    const r = calcular();
+    if(r.neto/r.tc >= objetivoUsd) break;
+    factor += 0.05;
+  }
+  calcular();
+});
+
+// listeners
+document.querySelectorAll('input,select').forEach(el=>{
+  el.addEventListener('input', calcular);
+  el.addEventListener('change', calcular);
+});
+
+calcular();
+sincronizarConSheets();
+</script>
+</body>
+</html>
