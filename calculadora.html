@@ -256,6 +256,7 @@
         <div class="usd" id="rNetoUsd">—</div>
       </div>
     </div>
+    <div class="warn" id="cashRecoveryNote" style="margin-top:14px;"></div>
   </div>
 
   <!-- CHECKLIST -->
@@ -611,6 +612,16 @@ function calcular(){
   const netoCard = document.getElementById('netoCard');
   netoCard.classList.remove('neto-pos','neto-neg');
   netoCard.classList.add(neto>=0 ? 'neto-pos':'neto-neg');
+
+  // punto de equilibrio en efectivo real: facturación vs caja previa total (fijos + costo de TODO el stock producido)
+  // independiente del toggle pesimista — esto es plata que ya salió de tu bolsillo, se venda o no el resto
+  const gapEfectivo = caja - facturacion;
+  const cashBox = document.getElementById('cashRecoveryNote');
+  if(gapEfectivo <= 0){
+    cashBox.innerHTML = `<b>Punto de equilibrio en efectivo: cubierto.</b> Ya facturaste lo suficiente para cubrir el 100% de lo invertido (fijos + costo de producir todo el stock, se venda o no) — te sobran ${fmtARS(-gapEfectivo)} (${fmtUSD(-gapEfectivo, tc)}) por encima de eso, además de lo que te quede sin vender.`;
+  } else {
+    cashBox.innerHTML = `<b>Punto de equilibrio en efectivo: faltan ${fmtARS(gapEfectivo)} (${fmtUSD(gapEfectivo, tc)}).</b> Esto es sin importar si vendés más stock o no — es cuánto más necesitás facturar para haber recuperado en efectivo todo lo que ya gastaste (fijos + producir las 138 piezas), aunque después te sobre mercadería sin vender.`;
+  }
 
   // nota de reposicion
   let repoLines = [];
