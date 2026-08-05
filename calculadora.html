@@ -8,21 +8,21 @@
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
   :root{
-    --bg:#0B0D18;
-    --card:#12162A;
-    --card-alt:#171C34;
-    --line:#262C4A;
-    --text:#E7E6F0;
-    --muted:#9591B8;
-    --gold:#E3B873;
-    --violet:#9C8FE0;
-    --green:#7FCB9E;
-    --red:#E28080;
+    --bg:#F7F5EF;
+    --card:#FFFFFF;
+    --card-alt:#F1EEE4;
+    --line:#E1DDCF;
+    --text:#1D2233;
+    --muted:#6B6F80;
+    --gold:#A8752E;
+    --violet:#5B4FC4;
+    --green:#1F8A4C;
+    --red:#C43D3D;
     --radius:14px;
   }
   *{box-sizing:border-box;}
   body{
-    margin:0; background:radial-gradient(ellipse at top, #151A32 0%, #0B0D18 60%);
+    margin:0; background:var(--bg);
     color:var(--text); font-family:'Inter',sans-serif; padding:32px 20px 80px;
   }
   .wrap{max-width:1080px; margin:0 auto;}
@@ -73,6 +73,10 @@
     display:inline-block; background:var(--card-alt); border:1px solid var(--line);
     border-radius:6px; padding:2px 7px; font-size:11px; color:var(--muted);
   }
+  td.drag-handle[draggable="true"]{cursor:grab;}
+  td.drag-handle[draggable="true"]:active{cursor:grabbing;}
+  tr.drag-over{border-top:2px solid var(--gold);}
+  td.drag-handle{width:22px; color:var(--muted); font-size:16px; text-align:center; user-select:none;}
   .warn{
     background:rgba(227,184,115,.08); border:1px solid rgba(227,184,115,.35);
     border-radius:10px; padding:10px 14px; font-size:12.5px; color:var(--gold); margin-top:10px;
@@ -172,11 +176,12 @@
     <table id="productsTable">
       <thead>
         <tr>
-          <th>Formato</th><th>Precio</th><th>Costo</th><th>Stock producido</th><th>Vendidos</th><th>Margen unit.</th>
+          <th></th><th>Formato</th><th>Precio</th><th>Costo</th><th>Stock producido</th><th>Vendidos</th><th>Margen unit.</th>
         </tr>
       </thead>
       <tbody id="productsBody"></tbody>
     </table>
+    <div class="fmt-sub" style="margin-top:6px;">⠿ Arrastrá las filas por el ícono de la izquierda para reordenarlas — el orden se guarda en este navegador.</div>
 
     <div class="promo-row">
       <span style="min-width:210px;">🌙 20×20 — combos 3×$180.000 vendidos</span>
@@ -364,7 +369,23 @@ async function sincronizarConSheets(){
       actualizados++;
     });
 
+    // preservar lo que el usuario ya haya movido en los sliders de vendidos, antes de reconstruir
+    const vendidosActuales = {};
+    PRODUCTS.forEach(p=>{
+      const range = document.getElementById(p.id+'_vendidos_range');
+      if(range) vendidosActuales[p.id] = +range.value;
+    });
+
     buildTable();
+
+    PRODUCTS.forEach(p=>{
+      const range = document.getElementById(p.id+'_vendidos_range');
+      if(range && vendidosActuales[p.id]!==undefined){
+        range.value = Math.min(vendidosActuales[p.id], +range.max);
+        document.getElementById(p.id+'_vendidos_val').textContent = range.value;
+      }
+    });
+
     calcular();
     const ahora = new Date().toLocaleString('es-AR');
     statusEl.textContent = iStock>=0
@@ -393,7 +414,9 @@ function buildTable(){
   PRODUCTS.forEach(p=>{
     const tope = p.tipo === 'takeaway' ? p.stock : p.tope;
     const tr = document.createElement('tr');
+    tr.dataset.id = p.id;
     tr.innerHTML = `
+      <td class="drag-handle" draggable="true" title="Arrastrar para reordenar">⠿</td>
       <td><div class="fmt-name">${p.nombre}</div><div class="fmt-sub">${p.sub} · <span class="pill">${p.tipo === 'takeaway' ? 'take-away' : 'encargo'}</span></div></td>
       <td><input type="number" class="num-input mono" id="${p.id}_precio" value="${p.precio}" step="1000"></td>
       <td><input type="number" class="num-input mono" id="${p.id}_costo" value="${p.costo}" step="1000"></td>
@@ -419,7 +442,91 @@ function buildTable(){
     });
   });
 }
+
+// --- orden guardado (localStorage del navegador — funciona porque esto es un HTML standalone, no un artifact) ---
+const ORDER_KEY = 'bada2026_calc_order_v1';
+function guardarOrden(){
+  try{ localStorage.setItem(ORDER_KEY, JSON.stringify(PRODUCTS.map(p=>p.id))); }catch(e){}
+}
+function cargarOrden(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(ORDER_KEY));
+    if(Array.isArray(saved)){
+      const byId = Object.fromEntries(PRODUCTS.map(p=>[p.id,p]));
+      const reordered = saved.filter(id=>byId[id]).map(id=>byId[id]);
+      PRODUCTS.forEach(p=>{ if(!reordered.includes(p)) reordered.push(p); });
+      PRODUCTS.length = 0;
+      PRODUCTS.push(...reordered);
+    }
+  }catch(e){}
+}
+cargarOrden();
 buildTable();
+
+// --- captura/restauración de estado para no perder datos al reconstruir la tabla (drag o sync) ---
+function capturarProductosDesdeDOM(){
+  const vendidosMap = {};
+  PRODUCTS.forEach(p=>{
+    const precioEl = document.getElementById(p.id+'_precio');
+    const costoEl = document.getElementById(p.id+'_costo');
+    const stockEl = document.getElementById(p.id+'_stock');
+    const rangeEl = document.getElementById(p.id+'_vendidos_range');
+    if(precioEl) p.precio = +precioEl.value;
+    if(costoEl) p.costo = +costoEl.value;
+    if(stockEl) p.stock = +stockEl.value;
+    if(rangeEl) vendidosMap[p.id] = +rangeEl.value;
+  });
+  return vendidosMap;
+}
+function restaurarVendidos(map){
+  PRODUCTS.forEach(p=>{
+    const rangeEl = document.getElementById(p.id+'_vendidos_range');
+    if(rangeEl && map[p.id]!==undefined){
+      rangeEl.value = Math.min(map[p.id], +rangeEl.max);
+      const lbl = document.getElementById(p.id+'_vendidos_val');
+      if(lbl) lbl.textContent = rangeEl.value;
+    }
+  });
+}
+
+// --- drag and drop para reordenar formatos (listeners en el <tbody>, que nunca se recrea a sí mismo) ---
+let dragSrcId = null;
+const productsBody = document.getElementById('productsBody');
+productsBody.addEventListener('dragstart', e=>{
+  const handle = e.target.closest('.drag-handle[draggable="true"]');
+  if(!handle) return;
+  const tr = handle.closest('tr');
+  if(!tr) return;
+  dragSrcId = tr.dataset.id;
+  e.dataTransfer.effectAllowed = 'move';
+});
+productsBody.addEventListener('dragover', e=>{
+  e.preventDefault();
+  document.querySelectorAll('#productsBody tr').forEach(r=>r.classList.remove('drag-over'));
+  const tr = e.target.closest('tr');
+  if(tr) tr.classList.add('drag-over');
+});
+productsBody.addEventListener('dragleave', e=>{
+  const tr = e.target.closest('tr');
+  if(tr) tr.classList.remove('drag-over');
+});
+productsBody.addEventListener('drop', e=>{
+  e.preventDefault();
+  document.querySelectorAll('#productsBody tr').forEach(r=>r.classList.remove('drag-over'));
+  const targetTr = e.target.closest('tr');
+  if(!targetTr || !dragSrcId || targetTr.dataset.id === dragSrcId){ dragSrcId=null; return; }
+  const targetId = targetTr.dataset.id;
+  const vendidosMap = capturarProductosDesdeDOM();
+  const srcIdx = PRODUCTS.findIndex(p=>p.id===dragSrcId);
+  const tgtIdx = PRODUCTS.findIndex(p=>p.id===targetId);
+  const [moved] = PRODUCTS.splice(srcIdx,1);
+  PRODUCTS.splice(tgtIdx,0,moved);
+  guardarOrden();
+  buildTable();
+  restaurarVendidos(vendidosMap);
+  calcular();
+  dragSrcId = null;
+});
 
 function getInputs(){
   const o = {};
@@ -594,11 +701,10 @@ document.getElementById('solveBtn').addEventListener('click', ()=>{
   calcular();
 });
 
-// listeners
-document.querySelectorAll('input,select').forEach(el=>{
-  el.addEventListener('input', calcular);
-  el.addEventListener('change', calcular);
-});
+// delegación de eventos a nivel documento: sobrevive a que buildTable() reconstruya
+// los sliders/inputs del catálogo (por ejemplo, después de sincronizar con el Sheets)
+document.addEventListener('input', calcular);
+document.addEventListener('change', calcular);
 
 calcular();
 sincronizarConSheets();
