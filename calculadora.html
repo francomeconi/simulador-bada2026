@@ -400,13 +400,13 @@ document.getElementById('syncBtn').addEventListener('click', sincronizarConSheet
 
 // Catálogo — tipo: 'takeaway' (tope de venta = stock físico producido, dinámico) o 'encargo' (tope de venta = edición total, fijo — se sigue vendiendo por encargo aunque el stock de exhibición sea 1)
 const PRODUCTS = [
+  {id:'p20x20', nombre:'20×20 — Lunas (7 fases)', sub:'stock escalonado: Llena 15, resto 8 c/u', precio:70000, costo:11000, stock:63, vendidos:20, tipo:'takeaway'},
+  {id:'p20x30', nombre:'20×30 — revistero (Baúl 1)', sub:'10 obras · ed. 10 c/u, 3 stock c/u', precio:100000, costo:11000, stock:30, vendidos:10, tipo:'takeaway'},
+  {id:'p30x30', nombre:'30×30 — mesa', sub:'10 obras · asimétrico (Sol/Luna 5, resto 3)', precio:120000, costo:16000, stock:34, vendidos:10, tipo:'takeaway'},
+  {id:'pfases', nombre:'Fases lunares 100×30', sub:'1 obra · edición de 15 · costo referencial', precio:750000, costo:175000, stock:1, vendidos:0, tope:15, tipo:'encargo'},
   {id:'p60x40', nombre:'60×40 — pared izquierda', sub:'6 obras · ed. 10 c/u', precio:600000, costo:98000, stock:6, vendidos:1, tope:60, tipo:'encargo'},
   {id:'p60x90', nombre:'60×90 — pared derecha', sub:'3 obras · ed. 10 c/u', precio:1000000, costo:190000, stock:3, vendidos:1, tope:30, tipo:'encargo'},
   {id:'pluna', nombre:'La Luna 100×150', sub:'1 obra · edición de 7', precio:3000000, costo:660000, stock:1, vendidos:1, tope:7, tipo:'encargo'},
-  {id:'pfases', nombre:'Fases lunares 100×30', sub:'1 obra · edición de 15 · costo referencial', precio:750000, costo:175000, stock:1, vendidos:0, tope:15, tipo:'encargo'},
-  {id:'p30x30', nombre:'30×30 — mesa', sub:'10 obras · asimétrico (Sol/Luna 5, resto 3)', precio:120000, costo:16000, stock:34, vendidos:10, tipo:'takeaway'},
-  {id:'p20x30', nombre:'20×30 — revistero (Baúl 1)', sub:'10 obras · ed. 10 c/u, 3 stock c/u', precio:100000, costo:11000, stock:30, vendidos:10, tipo:'takeaway'},
-  {id:'p20x20', nombre:'20×20 — Lunas (7 fases)', sub:'stock escalonado: Llena 15, resto 8 c/u', precio:70000, costo:11000, stock:63, vendidos:20, tipo:'takeaway'},
 ];
 
 function buildTable(){
