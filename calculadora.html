@@ -166,8 +166,13 @@
         <label>Tipo de cambio ARS/USD</label>
         <input type="number" id="tc" value="1525" step="1">
       </div>
+      <div>
+        <label>Comisión de posnet (%)</label>
+        <select id="comisionPosnet"></select>
+      </div>
     </div>
     <div class="warn">Stand: precio de lista USD 3.000 con 10% de descuento por reserva anticipada = <b>USD 2.700</b> (default). Se le aplica 21% IVA automáticamente. El depósito del 50% ya está pagado.</div>
+    <div class="warn" style="margin-top:8px;">Comisión de posnet en <b>0% por defecto</b> — activala cuando confirmes la tasa real. Se aplica de forma simple sobre el 100% de la facturación (no distingue tarjeta/transferencia/efectivo); si más adelante querés un modelo por método de pago, avisame.</div>
   </div>
 
   <!-- CATALOGO -->
@@ -281,6 +286,18 @@
 <script>
 const fmtARS = n => '$' + Math.round(n).toLocaleString('es-AR');
 const fmtUSD = (n, tc) => 'USD ' + Math.round(n/tc).toLocaleString('es-AR');
+
+// dropdown de comisión de posnet: 0% a 10% en pasos de 0,5%, default 0%
+(function poblarComisionPosnet(){
+  const sel = document.getElementById('comisionPosnet');
+  for(let v=0; v<=10; v+=0.5){
+    const opt = document.createElement('option');
+    opt.value = v;
+    opt.textContent = v.toFixed(1) + '%';
+    if(v===0) opt.selected = true;
+    sel.appendChild(opt);
+  }
+})();
 
 // ⚠️ REEMPLAZAR: pegar acá la URL del CSV publicado (Archivo → Compartir → Publicar en la web → esta hoja → CSV)
 // Formato típico: https://docs.google.com/spreadsheets/d/e/2PACX-xxxxx/pub?output=csv
@@ -400,13 +417,13 @@ document.getElementById('syncBtn').addEventListener('click', sincronizarConSheet
 
 // Catálogo — tipo: 'takeaway' (tope de venta = stock físico producido, dinámico) o 'encargo' (tope de venta = edición total, fijo — se sigue vendiendo por encargo aunque el stock de exhibición sea 1)
 const PRODUCTS = [
-  {id:'p20x20', nombre:'20×20 — Lunas (7 fases)', sub:'stock escalonado: Llena 15, resto 8 c/u', precio:70000, costo:11000, stock:63, vendidos:20, tipo:'takeaway'},
-  {id:'p20x30', nombre:'20×30 — revistero (Baúl 1)', sub:'10 obras · ed. 10 c/u, 3 stock c/u', precio:100000, costo:11000, stock:30, vendidos:10, tipo:'takeaway'},
-  {id:'p30x30', nombre:'30×30 — mesa', sub:'10 obras · asimétrico (Sol/Luna 5, resto 3)', precio:120000, costo:16000, stock:34, vendidos:10, tipo:'takeaway'},
-  {id:'pfases', nombre:'Fases lunares 100×30', sub:'1 obra · edición de 15 · costo referencial', precio:750000, costo:175000, stock:1, vendidos:0, tope:15, tipo:'encargo'},
-  {id:'p60x40', nombre:'60×40 — pared izquierda', sub:'6 obras · ed. 10 c/u', precio:600000, costo:98000, stock:6, vendidos:1, tope:60, tipo:'encargo'},
-  {id:'p60x90', nombre:'60×90 — pared derecha', sub:'3 obras · ed. 10 c/u', precio:1000000, costo:190000, stock:3, vendidos:1, tope:30, tipo:'encargo'},
-  {id:'pluna', nombre:'La Luna 100×150', sub:'1 obra · edición de 7', precio:3000000, costo:660000, stock:1, vendidos:1, tope:7, tipo:'encargo'},
+  {id:'p20x20', nombre:'20×20 — Lunas (7 fases)', sub:'stock escalonado: Llena 15, resto 8 c/u · costo c/desc. Gerardo', precio:70000, costo:9021, stock:63, vendidos:20, tipo:'takeaway'},
+  {id:'p20x30', nombre:'20×30 — revistero (Baúl 1)', sub:'10 obras · ed. 10 c/u, 3 stock c/u · costo c/desc. Gerardo', precio:100000, costo:9021, stock:30, vendidos:10, tipo:'takeaway'},
+  {id:'p30x30', nombre:'30×30 — mesa', sub:'10 obras · asimétrico (Sol/Luna 5, resto 3) · costo c/desc. Gerardo', precio:120000, costo:13121, stock:34, vendidos:10, tipo:'takeaway'},
+  {id:'pfases', nombre:'Fases lunares 100×30', sub:'1 obra · edición de 15 · marco real $125.000 + impresión ESTIMADA c/desc.', precio:750000, costo:166002, stock:1, vendidos:0, tope:15, tipo:'encargo'},
+  {id:'p60x40', nombre:'60×40 — pared izquierda', sub:'6 obras · ed. 10 c/u · marco $60.000 + impresión c/desc. Gerardo', precio:600000, costo:91162, stock:6, vendidos:1, tope:60, tipo:'encargo'},
+  {id:'p60x90', nombre:'60×90 — pared derecha', sub:'3 obras · ed. 10 c/u · marco $104.000 + impresión c/desc. Gerardo', precio:1000000, costo:174524, stock:3, vendidos:1, tope:30, tipo:'encargo'},
+  {id:'pluna', nombre:'La Luna 100×150', sub:'1 obra · edición de 7 · marco $300.000 + impresión c/desc. Gerardo', precio:3000000, costo:595216, stock:1, vendidos:1, tope:7, tipo:'encargo'},
 ];
 
 function buildTable(){
@@ -588,6 +605,11 @@ function calcular(){
   });
   facturacion += combo20x3*180000 + combo20ciclo*400000 + combo30x2*220000;
 
+  // comisión de posnet: se descuenta de la facturación antes de calcular el resultado neto
+  const comisionPct = +document.getElementById('comisionPosnet').value;
+  const comisionMonto = facturacion * (comisionPct/100);
+  const facturacionNeta = facturacion - comisionMonto;
+
   // costo de lo vendido (o de todo lo producido si es pesimista)
   let costoVendido = 0;
   PRODUCTS.forEach(p=>{
@@ -596,7 +618,7 @@ function calcular(){
     costoVendido += unidadesCosto * d.costo;
   });
 
-  const neto = facturacion - costoVendido - fijos;
+  const neto = facturacionNeta - costoVendido - fijos;
 
   // pintar resultados
   document.getElementById('rFijos').textContent = fmtARS(fijos);
@@ -605,7 +627,7 @@ function calcular(){
   document.getElementById('rProduccionUsd').textContent = fmtUSD(produccion, tc);
   document.getElementById('rCaja').textContent = fmtARS(caja);
   document.getElementById('rCajaUsd').textContent = fmtUSD(caja, tc);
-  document.getElementById('rFact').textContent = fmtARS(facturacion) + ` (${totalUnidadesVendidas} obras · ${Math.round(totalUnidadesVendidas/4)}/día)`;
+  document.getElementById('rFact').textContent = fmtARS(facturacion) + ` (${totalUnidadesVendidas} obras · ${Math.round(totalUnidadesVendidas/4)}/día)` + (comisionPct>0 ? ` · neta de posnet: ${fmtARS(facturacionNeta)}` : '');
   document.getElementById('rFactUsd').textContent = fmtUSD(facturacion, tc);
   document.getElementById('rNeto').textContent = fmtARS(neto);
   document.getElementById('rNetoUsd').textContent = fmtUSD(neto, tc);
@@ -613,14 +635,14 @@ function calcular(){
   netoCard.classList.remove('neto-pos','neto-neg');
   netoCard.classList.add(neto>=0 ? 'neto-pos':'neto-neg');
 
-  // punto de equilibrio en efectivo real: facturación vs caja previa total (fijos + costo de TODO el stock producido)
+  // punto de equilibrio en efectivo real: facturación NETA vs caja previa total (fijos + costo de TODO el stock producido)
   // independiente del toggle pesimista — esto es plata que ya salió de tu bolsillo, se venda o no el resto
-  const gapEfectivo = caja - facturacion;
+  const gapEfectivo = caja - facturacionNeta;
   const cashBox = document.getElementById('cashRecoveryNote');
   if(gapEfectivo <= 0){
-    cashBox.innerHTML = `<b>Punto de equilibrio en efectivo: cubierto.</b> Ya facturaste lo suficiente para cubrir el 100% de lo invertido (fijos + costo de producir todo el stock, se venda o no) — te sobran ${fmtARS(-gapEfectivo)} (${fmtUSD(-gapEfectivo, tc)}) por encima de eso, además de lo que te quede sin vender.`;
+    cashBox.innerHTML = `<b>Punto de equilibrio en efectivo: cubierto.</b> Ya facturaste lo suficiente (neto de comisión de posnet) para cubrir el 100% de lo invertido (fijos + costo de producir todo el stock, se venda o no) — te sobran ${fmtARS(-gapEfectivo)} (${fmtUSD(-gapEfectivo, tc)}) por encima de eso, además de lo que te quede sin vender.`;
   } else {
-    cashBox.innerHTML = `<b>Punto de equilibrio en efectivo: faltan ${fmtARS(gapEfectivo)} (${fmtUSD(gapEfectivo, tc)}).</b> Esto es sin importar si vendés más stock o no — es cuánto más necesitás facturar para haber recuperado en efectivo todo lo que ya gastaste (fijos + producir las 138 piezas), aunque después te sobre mercadería sin vender.`;
+    cashBox.innerHTML = `<b>Punto de equilibrio en efectivo: faltan ${fmtARS(gapEfectivo)} (${fmtUSD(gapEfectivo, tc)}).</b> Esto es sin importar si vendés más stock o no — es cuánto más necesitás facturar (neto de comisión de posnet) para haber recuperado en efectivo todo lo que ya gastaste (fijos + producir las 138 piezas), aunque después te sobre mercadería sin vender.`;
   }
 
   // nota de reposicion
