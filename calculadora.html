@@ -154,11 +154,11 @@
       </div>
       <div>
         <label>Entelado + ploteo (ARS)</label>
-        <input type="number" id="ploteo" value="1300000" step="10000">
+        <input type="number" id="ploteo" value="1320000" step="10000">
       </div>
       <div>
         <label>Otros fijos — alquileres/mesa/exhibidores (ARS)</label>
-        <input type="number" id="otros" value="500000" step="10000">
+        <input type="number" id="otros" value="1500000" step="10000">
       </div>
     </div>
     <div class="grid grid-4" style="margin-top:14px;">
@@ -223,6 +223,7 @@
         <button id="solveBtn">Calcular cantidades</button>
       </div>
     </div>
+    <div class="warn" id="solverStatus" style="margin-top:12px; display:none;"></div>
   </div>
 
   <!-- VISTA PESIMISTA -->
@@ -705,33 +706,49 @@ document.getElementById('solveBtn').addEventListener('click', ()=>{
   const objetivoUsd = +document.getElementById('objetivo').value;
   const contandoLuna = document.getElementById('contandoLuna').checked;
   const tc = +document.getElementById('tc').value;
+  const objetivoArs = objetivoUsd * tc;
+  const statusEl = document.getElementById('solverStatus');
+  statusEl.style.display = 'block';
 
-  // fijar luna
-  document.getElementById('pluna_vendidos_range').value = contandoLuna ? 1 : 0;
+  // fijar luna (no escala con el factor, es 0 o 1 según el checkbox)
+  const rangeLuna = document.getElementById('pluna_vendidos_range');
+  rangeLuna.value = contandoLuna ? 1 : 0;
 
-  // proporcion base si todo esta en cero
-  const base = {p60x40:6, p60x90:3, p30x30:20, p20x30:20, p20x20:40}; // proporcion base tipo 30/12/8/3 escalada al catalogo nuevo
-  let current = {};
-  ['p60x40','p60x90','p30x30','p20x30','p20x20'].forEach(id=>{
-    current[id] = +document.getElementById(id+'_vendidos_range').value;
-  });
-  const allZero = Object.values(current).every(v=>v===0);
-  if(allZero) current = base;
+  // proporción base (relación entre formatos) — siempre se arranca de acá, no de lo que ya haya en los sliders,
+  // para que el resultado sea determinístico y el mínimo real, no "lo que ya había puesto antes"
+  const base = {p60x40:1, p60x90:1, p30x30:5, p20x30:5, p20x20:10};
+  const ids = Object.keys(base);
+  const topes = {};
+  ids.forEach(id=>{ topes[id] = +document.getElementById(id+'_vendidos_range').max; });
 
-  // iterar escalando factor hasta alcanzar objetivo (busqueda simple)
-  let factor = 1;
-  for(let iter=0; iter<400; iter++){
-    ['p60x40','p60x90','p30x30','p20x30','p20x20'].forEach(id=>{
-      const range = document.getElementById(id+'_vendidos_range');
-      const tope = +range.max; // dinámico: stock producido (take-away) o edición (encargo)
-      const val = Math.min(tope, Math.ceil(current[id]*factor));
-      range.value = val;
+  function aplicarFactor(factor){
+    ids.forEach(id=>{
+      const val = Math.min(topes[id], Math.round(base[id]*factor));
+      document.getElementById(id+'_vendidos_range').value = val;
     });
-    const r = calcular();
-    if(r.neto/r.tc >= objetivoUsd) break;
-    factor += 0.05;
+    return calcular();
   }
-  calcular();
+
+  // hi: factor grande que garantiza que todo quede en su tope máximo
+  const hiFactor = Math.max(...ids.map(id=>topes[id]/base[id])) + 1;
+
+  const netoEnHi = aplicarFactor(hiFactor).neto;
+  if(netoEnHi < objetivoArs){
+    // ni vendiendo el 100% del stock/edición se alcanza el objetivo
+    statusEl.innerHTML = `⚠ No se alcanza este objetivo ni vendiendo el 100% del stock disponible — con todo vendido, faltarían ${fmtARS(objetivoArs-netoEnHi)} (${fmtUSD(objetivoArs-netoEnHi, tc)}). Los sliders quedaron al máximo para que veas el techo real.`;
+    return;
+  }
+
+  // búsqueda binaria del factor mínimo que alcanza el objetivo (la función es monótona: más factor = más neto)
+  let lo = 0, hi = hiFactor;
+  for(let iter=0; iter<40; iter++){
+    const mid = (lo+hi)/2;
+    const neto = aplicarFactor(mid).neto;
+    if(neto >= objetivoArs) hi = mid; else lo = mid;
+  }
+  const resultado = aplicarFactor(hi);
+  const detalle = ids.map(id=>`${document.getElementById(id+'_vendidos_range').value} ${id.replace('p','')}`).join(' · ');
+  statusEl.innerHTML = `✓ Mínimo encontrado: ${detalle}${contandoLuna ? ' + 1 Luna' : ''} → neto ${fmtARS(resultado.neto)} (${fmtUSD(resultado.neto, tc)}).`;
 });
 
 // delegación de eventos a nivel documento: sobrevive a que buildTable() reconstruya
